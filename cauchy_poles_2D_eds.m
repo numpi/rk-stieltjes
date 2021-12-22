@@ -1,0 +1,26 @@
+function pole = cauchy_poles_2D_eds(a, b, n)
+% Return the optimal poles for evaluating a Cauchy-Stieltjes function on [a, b] on a 1D Hermitian matrix (no Kronecker sums)
+
+D = sqrt(b^2 - a^2);
+ta = (D + a - b)/(D - a + b);
+ha = ta^2;
+
+% Find the inverse Moebius map that maps [-1, -l] and [l, 1] into intervals 
+% containing[-inf, -a] and [a, b]
+C = @(z) ((b + D) * z + b - D) ./ (1 + z);
+
+% EDS part: we determine the function aa(t) and aa1(t) that define the CDF
+% and the density of the probability distribution for the distribution of
+% the poles. 
+Kp = ellipke(1 - ha);
+
+if isinf(Kp)
+    Kp = abs(log(sqrt(ha))) + 1.386694159834995;
+end
+
+a  = @(y) -lellipf(asin(sqrt(-y+1.0)),1.0./sqrt(1.0-ha),5e-16) / Kp + 1;
+a1 = @(y) 1./(2*Kp*sqrt((y-ha).*y.*(1-y)));
+
+pole = C(-eds_get_pole(a, a1, ha, n));
+
+end

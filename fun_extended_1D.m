@@ -1,30 +1,45 @@
-function x = fun_extended_1D(f, A, u, l)
+function [x, err] = fun_extended_1D(f, A, u, S, tol, xexact)
 %FUN_EXTENDED Evaluate f(A)u via extended Krylov method.
-%
-% References:
-% [1] Rational Krylov for Stieltjes matrix functions: convergence and pole 
-%     selection, S. Massei and L. Robol, 2019.
 
-polesA = zeros(1, l+1); polesA(2:2:l) = inf; polesA(end) = inf;
+SS = ek_struct(A, true);
 
 % Construct the rational Krylov subspace
-[VA, ~, ~] = rat_krylov(A,   u, polesA);
+[VA, KA, HA, params] = ek_krylov(SS, u);
+ul = VA(:,1:end-1)' * u;
 
-VA = VA(:, 1:end-1);
+err = nan(1,2);
 
-Al = VA' * A * VA;
+for j = 2 : ceil(S/2)
+    Al = HA(1:end-1,:) / KA(1:end-1,:);
+    % Al = .5 * (Al + Al');
+    
+    % Project the RHS
+    % ul = VA(:,1:end-1)' * u;
+    ul(size(VA, 2)-1) = 0;
 
-
-% Make them symmetric
-Al=(Al+Al')/2;
-
-% Project the RHS
-ul = VA' * u;
-
-% Evaluate the small function
-Y = fun_diag_1D(f, Al, ul);
-
-x = VA * Y;
+    % Evaluate the small function
+    Y = fun_diag_1D(f, Al, ul);
+    x = VA(:,1:end-1) * Y;
+    
+    if exist('xexact', 'var')
+        if j > 1
+            err(2*j-1) = err(2*j-2);
+        end
+        err(2*j) = norm(x - xexact);
+        
+        if err(2*j) < tol
+            return;
+        end
+    end
+    
+    %if mod(j, 2) == 1
+    %    newpole = 0;
+    %else
+    %    newpole = inf;
+    %end    
+    
+    [VA, KA, HA, params] = ek_krylov(VA, KA, HA, params);
+end
 
 end
 

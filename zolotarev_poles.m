@@ -1,14 +1,12 @@
 function [p, q] = zolotarev_poles(n, a, b, c, d)
-%ZOLOTAREV_POLES Determine poles for the optimal Zolotarev approximant.
+%ZOLOTAREV_POLES Determine poles for the optimal Zolotarev approximant. 
 %
-% Code taken from Sabino, John. Solution of large-scale Lyapunov equations 
-% via the block modified smith methods. 2006.
-
+%
 if ~exist('c', 'var')
-	c = a;
-	d = b;
+    c = a;
+    d = b;
 end
-cx = (a - c) /2;
+cx = (a - c) /2; 
 if a - cx > 0
 	flag_sign = 1;
 	a = a - cx;
@@ -16,7 +14,7 @@ if a - cx > 0
 	c = c + cx;
 	d = d + cx;
 else
-	cx = (-b + d)/2;
+	cx = (-b + d)/2; 
 	if -b - cx < 0
 		error('Unsupported configuration');
 	end
@@ -38,10 +36,10 @@ eta = 2 * (b - a) * (d - c) / ((a + c) * (b + d));
 kp  = 1 / (1 + eta + sqrt(eta * (eta + 2)));
 
 if a == c && b == d
-	g = 0.0;
+    g = 0.0;
 else
-	g   = 2 * (kp * (b + d) - (a + c)) / ...
-		((a + c) * (b - d) + kp * (b + d) * (c - a));
+    g   = 2 * (kp * (b + d) - (a + c)) / ...
+        ((a + c) * (b - d) + kp * (b + d) * (c - a));
 end
 
 f = (2 + g * (b - d)) / (b + d);
@@ -50,9 +48,13 @@ h = kp * (c - a + 2 * a*c*g) / (a + c);
 
 p = zeros(1, n);
 q = zeros(1, n);
-k = 1 - kp^2;
+k = (1 + kp)*(1 - kp); % 1 - kp^2;
 
-K = ellipke(k);
+K = ellipk(k);
+
+if isinf(K)
+    K = abs(log(kp)) + 1.386694159834995;
+end
 
 [~,~,w] = ellipj((2*(1:n)-1)*K/(2*n), k);
 p = -(h + w) ./ (w.*g + f);
